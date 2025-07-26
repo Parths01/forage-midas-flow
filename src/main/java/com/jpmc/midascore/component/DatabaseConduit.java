@@ -16,10 +16,12 @@ public class DatabaseConduit {
     
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final IncentiveService incentiveService;
 
-    public DatabaseConduit(UserRepository userRepository, TransactionRepository transactionRepository) {
+    public DatabaseConduit(UserRepository userRepository, TransactionRepository transactionRepository, IncentiveService incentiveService) {
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
+        this.incentiveService = incentiveService;
     }
 
     public void save(UserRecord userRecord) {
@@ -53,18 +55,23 @@ public class DatabaseConduit {
         
         // Process the transaction
         sender.setBalance(sender.getBalance() - transaction.getAmount());
-        recipient.setBalance(recipient.getBalance() + transaction.getAmount());
+        
+        // Get incentive from the API
+        float incentive = incentiveService.getIncentive(transaction);
+        
+        // Add transaction amount plus incentive to recipient's balance
+        recipient.setBalance(recipient.getBalance() + transaction.getAmount() + incentive);
         
         // Save updated user records
         userRepository.save(sender);
         userRepository.save(recipient);
         
-        // Create and save transaction record
-        TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount());
+        // Create and save transaction record with incentive
+        TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount(), incentive);
         transactionRepository.save(transactionRecord);
         
-        logger.info("Transaction processed successfully: {} sent {} to {}", 
-                sender.getName(), transaction.getAmount(), recipient.getName());
+        logger.info("Transaction processed successfully: {} sent {} to {} with incentive {}", 
+                sender.getName(), transaction.getAmount(), recipient.getName(), incentive);
         logger.info("New balances - {}: {}, {}: {}", 
                 sender.getName(), sender.getBalance(), recipient.getName(), recipient.getBalance());
         

@@ -34,6 +34,14 @@ public class TransactionListener {
             logger.warn("Transaction rejected");
         }
         
+        // Check wilbur's balance after each transaction involving ID 9 (wilbur)
+        if (transaction.getSenderId() == 9L || transaction.getRecipientId() == 9L) {
+            var wilbur = databaseConduit.findUserById(9L);
+            if (wilbur != null) {
+                logger.warn("WILBUR BALANCE UPDATE: {} (transaction: {})", wilbur.getBalance(), transaction);
+            }
+        }
+        
         // Check waldorf's balance after each transaction involving ID 5
         if (transaction.getSenderId() == 5L || transaction.getRecipientId() == 5L) {
             var waldorf = databaseConduit.findUserById(5L);
